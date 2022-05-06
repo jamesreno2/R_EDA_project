@@ -1,0 +1,103 @@
+---
+title: "Austin_Animal_Center_R_EDA_Project"
+author: "James Reno"
+date: '2022-05-05'
+output: html_document
+---
+
+# R Exploratory Data Analysis Project for NYCDSA
+
+## Austin Animal Center Intakes and Outcomes
+
+[Intake Data](https://data.austintexas.gov/Health-and-Community-Services/Austin-Animal-Center-Intakes/wter-evkm)
+
+[Outcome Data](https://data.austintexas.gov/Health-and-Community-Services/Austin-Animal-Center-Outcomes/9t4d-g238)
+
+* Note data are added daily, these data sets were access on May 2, 2022 at approximately 1 pm CST.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+```
+
+
+```{r }
+
+# need to add reading and cleaning data to this cell
+aac_intake = read.csv('Austin_Animal_Center_Intakes.csv')
+#cleaning up column names to lower
+
+aac_intake = rename_with(aac_intake, tolower)
+
+#converting date time to date format
+
+aac_intake$datetime = mdy_hms(aac_intake$datetime)
+
+aac_intake$animal.type = as.factor(aac_intake$animal.type)
+
+#no null values 
+sum(is.na(aac_intake))
+
+#different units of measurement will convert all to days
+unique(aac_intake$age.upon.intake)
+
+aac_intake$numeric_age = abs(as.numeric(sapply(str_split(aac_intake$age.upon.intake, ' '), `[`,1)))
+aac_intake$units_age = sapply(str_split(aac_intake$age.upon.intake, ' '), `[`,2)
+
+unique(aac_intake$units_age)
+
+aac_intake = aac_intake %>% mutate(age_in_days = ifelse(substr(units_age,1,3) == 'day', numeric_age, ifelse(substr(units_age,1,3) == 'mon', numeric_age*30, 
+                                          ifelse(substr(units_age,1,3) == 'yea', numeric_age*365, ifelse(substr(units_age,1,3)=='wee',numeric_age*7,NA)))))
+
+sum(is.na(aac_intake$age_in_days))
+```
+
+```{r}
+#medians = aac_intake %>% group_by(monthyear, animal.type) %>% summarise(num_anims = n()) %>% group_by(animal.type) %>% 
+#  summarise(med_intake =median(num_anims))
+
+aac_intake %>% group_by(monthyear, animal.type) %>% summarise(num_animals = n()) %>%
+  ggplot(aes(x=reorder(animal.type, num_animals, fun = median, .desc=TRUE),y=num_animals)) +
+  geom_boxplot() + labs(x="Animal Type",y="Number of Animals per Month",title="Number of Animals Entering Austin Animal Center per Month") 
+
+#+ geom_text(data = medians, aes(label = round(med_intake, 1), y = med_intake +30, col='red'), size = 6)
+
+
+```
+
+```{r}
+
+aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(yr=year(datetime), animal.type) %>% summarise(num_animals = n()) %>%
+  ggplot(aes(x=factor(yr), y=num_animals, fill = reorder(animal.type,num_animals, fun=sum))) +
+  geom_col() + labs(x="Year",y="Number of Animals per Year",title="Number of Animals Entering Austin Animal Center per Year", fill="Animal Type") 
+
+
+#reorder(num_animals, animal.type, fun = sum, .desc=TRUE)
+
+```
+
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
