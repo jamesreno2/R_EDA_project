@@ -69,11 +69,20 @@ sum(is.na(aac_intake$age_in_days))
 #medians = aac_intake %>% group_by(monthyear, animal.type) %>% summarise(num_anims = n()) %>% group_by(animal.type) %>% 
 #  summarise(med_intake =median(num_anims))
 
-aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(monthyear, animal.type) %>% summarise(num_animals = n()) %>%
+g = aac_intake %>% filter(year(intake_datetime) > 2013 & year(intake_datetime) < 2022) %>% group_by(monthyear, animal.type) %>% summarise(num_animals = n()) %>%
   ggplot(aes(x=reorder(animal.type, -num_animals, fun = median),y=num_animals)) +
   geom_boxplot() + labs(x="Animal Type",y="Number of Animals per Month",title="Number of Animals Entering Austin Animal Center per Month") 
 
-#+ geom_text(data = medians, aes(label = round(med_intake, 1), y = med_intake +30, col='red'), size = 6)
+
+ggsave(
+  file.path("figures", "intake_num_per_month.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
 
 
 ```
@@ -82,9 +91,18 @@ aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_b
 ```{r}
 #age entering shelter
 
-aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% group_by(animal.type) %>%
+g=aac_intake %>% filter(year(intake_datetime) > 2013 & year(intake_datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% group_by(animal.type) %>%
   ggplot(aes(x=animal.type, y=(age_in_days/365))) +
   geom_boxplot() + labs(x="Animal Type",y="Age at Intake (Years)",title="Age of Animals Entering Austin Animal Center") 
+
+ggsave(
+  file.path("figures", "intake_age_cats_dogs.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 
 ```
 
@@ -101,14 +119,20 @@ aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.typ
 ```{r}
 #intake type for cat and dog
 
-aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% 
+g=aac_intake %>% filter(year(intake_datetime) > 2013 & year(intake_datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% 
   group_by(monthyear, animal.type, intake.type) %>%
   summarise(num_animals = n()) %>%
   ggplot() + geom_boxplot(aes(x=reorder(intake.type,-num_animals,fun=median), y=num_animals)) + facet_grid(rows=vars(animal.type)) +
-  labs(x="Intake Type", y="Number of Animals per Month",title="Number of Animals Entering Austin Animal Center by Intake Type 2014-2022")
+  labs(x="Intake Type", y="Number of Animals per Month",title="Number of Animals Entering Austin Animal Center \nby Intake Type 2014-2022")
 
-
-#+ coord_cartesian(ylim=c(35000,60000))
+ggsave(
+  file.path("figures", "intake_type_cats_dogs_per_month.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 
 ```
 
@@ -117,12 +141,19 @@ aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.typ
 ```{r}
 # number of animals per year by type
 
-aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(yr=year(datetime), animal.type) %>% summarise(num_animals = n()) %>%
+g=aac_intake %>% filter(year(intake_datetime) > 2013 & year(intake_datetime) < 2022) %>% group_by(yr=year(intake_datetime), animal.type) %>% summarise(num_animals = n()) %>%
   ggplot(aes(x=factor(yr), y=num_animals, fill = reorder(animal.type,num_animals, fun=sum))) +
   geom_col() + labs(x="Year",y="Number of Animals per Year",title="Number of Animals Entering Austin Animal Center per Year", fill="Animal Type") 
 
+ggsave(
+  file.path("figures", "intake_num_per_year_stacked.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 
-#reorder(num_animals, animal.type, fun = sum, .desc=TRUE)
 
 ```
 
@@ -130,20 +161,40 @@ aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_b
 #explaining the "other" category
 unique(aac_intake[aac_intake$animal.type=='Other',]$breed)
 
-aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Other') %>% 
+g=aac_intake %>% filter(year(intake_datetime) > 2013 & year(intake_datetime) < 2022 & animal.type == 'Other') %>% 
   group_by(animal.type, breed) %>% summarise(num_animals = n()) %>% arrange(desc(num_animals)) %>% slice_head(n=10) %>%
   ggplot(aes(x=reorder(breed,-num_animals,fun=sum), y=num_animals, fill = reorder(factor(breed), -num_animals, fun=sum))) +
   geom_col() + labs(x="",y="Number of Animals",title="Top 10 'Other' Animals Entering Austin Animal Center 2014-2022") +
   theme(axis.text.x = element_text(angle = 90), legend.position="none")
 
+ggsave(
+  file.path("figures", "top_ten_others.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
 ```
 
 ```{r}
-aac_intake %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Livestock') %>% 
+#livestock entering AAC
+
+g=aac_intake %>% filter(year(intake_datetime) > 2013 & year(intake_datetime) < 2022 & animal.type == 'Livestock') %>% 
   group_by(animal.type, breed) %>% summarise(num_animals = n()) %>% arrange(desc(num_animals)) %>% slice_head(n=10) %>%
   ggplot(aes(x=reorder(breed,-num_animals,fun=sum), y=num_animals, fill = reorder(factor(breed), -num_animals, fun=sum))) +
   geom_col() + labs(x="",y="Number of Animals",title="Types of Livestock Entering Austin Animal Center 2014-2022") +
   theme(axis.text.x = element_text(angle = 90), legend.position="none")
+
+ggsave(
+  file.path("figures", "livestock_intake_aac.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 ```
 
 ## Outcome Data
@@ -177,14 +228,64 @@ outcomes = outcomes %>% mutate(age_in_days = ifelse(substr(units_age,1,3) == 'da
 #same number of NAs
 sum(is.na(outcomes$age_in_days))
 
+
+
+#add feature amount of time at shelter with condition that it starts at the age of adoptable
+
+min(outcomes[(outcomes$outcome.type=='Adoption' & outcomes$age_in_days>0 & outcomes$animal.type %in% c('Dog','Cat')),]$age_in_days)
+
+outcomes[(outcomes$outcome.type=='Adoption' & outcomes$age_in_days==14& outcomes$animal.type %in% c('Dog','Cat')),]
+aac_intake[aac_intake$animal.id %in% c('A801564','A841058'),]
+
+aac_intake = rename(aac_intake, intake_datetime=datetime )
+
+outcomes %>%  inner_join(.,intake_date=aac_intake$datetime, on="animal.id")
+
+test_merge = merge(outcomes, aac_intake[ , c('animal.id','intake_datetime')], by = "animal.id", all.x=TRUE)
+
+#duplicates based on animals that escaped repeatedly and were returned to owner. There is no unique event ID included in the data set, so connecting these two would be difficult.
+length(unique(test_merge$animal.id))
+
+
+#doesn't affect adopted pets, which is the target of interest so will not attempt to identify the two that match
+length(unique(test_merge[test_merge$outcome.type=='Adoption',]$animal.id))
+length(test_merge[test_merge$outcome.type=='Adoption',]$animal.id)
+
+length(unique(outcomes[outcomes$outcome.type=='Adoption',]$animal.id))
+length(outcomes[outcomes$outcome.type=='Adoption',]$animal.id)
+
+test_merge %>% group_by(animal.id) %>% summarise(num_reps = n()) %>% arrange(desc(num_reps)) %>% slice_head(n=20)
+
+outcomes[outcomes$animal.id=='A721033',]
+
+aac_intake[aac_intake$animal.id=='A721033',]
+
+length(unique(outcomes$animal.id))
+
+outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog') & outcome.type=='Adoption') %>% group_by(animal.id) %>%
+  summarise(num_reps = n()) %>% filter(num_reps > 1)
+
+test_merge %>% filter(outcome.type=='Adoption' & ) %>%
+  mutate(days_in_shelter = day(datetime) - day(intake_datetime))
+
 ```
 
 
 ```{r}
+#animals exiting per month
 
-outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(monthyear, animal.type) %>% summarise(num_animals = n()) %>%
-  ggplot(aes(x=reorder(animal.type, num_animals, fun = median, .desc=TRUE),y=num_animals)) +
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(monthyear, animal.type) %>% summarise(num_animals = n()) %>%
+  ggplot(aes(x=reorder(animal.type, -num_animals, fun = median),y=num_animals)) +
   geom_boxplot() + labs(x="Animal Type",y="Number of Animals per Month",title="Number of Animals Exiting Austin Animal Center per Month") 
+
+ggsave(
+  file.path("figures", "outcome_num_per_month.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 
 ```
 
@@ -192,59 +293,211 @@ outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(
 ```{r}
 #age exiting shelter
 
-outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% group_by(animal.type) %>%
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% group_by(animal.type) %>%
   ggplot(aes(x=animal.type, y=(age_in_days/365))) +
   geom_boxplot() + labs(x="Animal Type",y="Age at Outcome (Years)",title="Age of Animals Exiting Austin Animal Center") 
+
+ggsave(
+  file.path("figures", "age_at_outcome.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 ```
 
 
 ```{r}
+#outcome type for cat and dog
 
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% 
+  group_by(monthyear, animal.type, outcome.type) %>%
+  summarise(num_animals = n()) %>%
+  ggplot() + geom_boxplot(aes(x=reorder(outcome.type,-num_animals,fun=median), y=num_animals)) + facet_grid(rows=vars(animal.type)) +
+  labs(x="Outcome Type", y="Number of Animals per Month",title="Number of Animals Exiting Austin Animal Center by Outcome Type 2014-2022") +
+  theme(axis.text.x = element_text(angle = 90))
+
+ggsave(
+  file.path("figures", "outcome_type_cat_dog.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
+```
+
+
+```{r}
+# examining the transfers
+
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog') & outcome.type=='Transfer') %>% 
+  group_by(monthyear, animal.type, outcome.subtype) %>%
+  summarise(num_animals = n()) %>%
+  ggplot() + geom_boxplot(aes(x=reorder(outcome.subtype,-num_animals,fun=median), y=num_animals)) + facet_grid(rows=vars(animal.type)) +
+  labs(x="Outcome SubType of Transfers", y="Number of Animals per Month",title="Number of Animals Transfered from Austin Animal Center \nOutcome Subtype 2014-2022") 
+
+ggsave(
+  file.path("figures", "transfer_types_cat_dog.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
+
+```
+
+
+```{r}
+#outcome type for cat and dog vs age
+
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% 
+  ggplot() + geom_boxplot(aes(x=outcome.type, y=age_in_days/365)) + facet_grid(rows=vars(animal.type)) +
+  labs(x="Outcome Type", y="Age of Animal (Years)",title="Age of Animals Exiting Austin Animal Center \nby Outcome Type 2014-2022") +
+  theme(axis.text.x = element_text(angle = 90))
+
+ggsave(
+  file.path("figures", "outcome_type_by_age_cat_dog.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 ```
 
 
 
 ```{r}
 # number of animals per year by type
-outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(yr=year(datetime), animal.type) %>% summarise(num_animals = n()) %>%
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022) %>% group_by(yr=year(datetime), animal.type) %>% summarise(num_animals = n()) %>%
   ggplot(aes(x=factor(yr), y=num_animals, fill = reorder(animal.type,num_animals, fun=sum))) +
   geom_col() + labs(x="Year",y="Number of Animals per Year",title="Number of Animals Exiting Austin Animal Center per Year", fill="Animal Type") 
+
+ggsave(
+  file.path("figures", "outcome_num_per_year_stacked.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
 ```
 
 
 ```{r}
-
-outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Other') %>% 
+#top 10 other animals exiting
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Other') %>% 
   group_by(animal.type, breed) %>% summarise(num_animals = n()) %>% arrange(desc(num_animals)) %>% slice_head(n=10) %>%
   ggplot(aes(x=reorder(breed,-num_animals,fun=sum), y=num_animals, fill = reorder(factor(breed), -num_animals, fun=sum))) +
   geom_col() + labs(x="",y="Number of Animals",title="Top 10 'Other' Animals Exiting Austin Animal Center 2014-2022") +
   theme(axis.text.x = element_text(angle = 90), legend.position="none")
 
+ggsave(
+  file.path("figures", "top_ten_others_exiting.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
 ```
 
 
 ```{r}
-
-outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Livestock') %>% 
+#types of livestock
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Livestock') %>% 
   group_by(animal.type, breed) %>% summarise(num_animals = n()) %>% arrange(desc(num_animals)) %>% slice_head(n=10) %>%
   ggplot(aes(x=reorder(breed,-num_animals,fun=sum), y=num_animals, fill = reorder(factor(breed), -num_animals, fun=sum))) +
   geom_col() + labs(x="",y="Number of Animals",title="Types of Livestock Exiting Austin Animal Center 2014-2022") +
   theme(axis.text.x = element_text(angle = 90), legend.position="none")
 
+ggsave(
+  file.path("figures", "livestock_exit_aac.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
+
 ```
 
 
 ```{r}
+#outcome types cat dog
+g=outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% group_by(outcome.type, animal.type) %>% summarise(num_animals = n()) %>%
+  ggplot(aes(x=reorder(factor(animal.type), -num_animals,fun=sum), y=num_animals, fill = reorder(outcome.type,num_animals, fun=sum))) +
+  geom_col() + labs(x="Animal Type",y="Number of Animals",title="Number of Animals Exiting Austin Animal Center \nand Outcome Type 2014-2021", fill="Outcome Type")
 
-
+ggsave(
+  file.path("figures", "outcome_type_cats_dogs_stacked.jpeg"),
+  plot = g,
+  width = 8.5 - 2,
+  height = (11 - 2) / 2,
+  units = "in",
+  dpi = 300
+)
 
 ```
 
 
 ```{r}
+#percent euthanized
+
+outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type %in% c('Cat','Dog')) %>% group_by(animal.type,outcome.type) %>% summarise(num_animals = n()) %>% mutate(percent_animals = round(num_animals/sum(num_animals),2))
 
 ```
 
+```{r}
+# subsetting for 
+test_merge %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Dog' & outcome.type == 'Adoption') %>%
+  select(sex.upon.outcome, age_in_days)
+
+
+```
+
+```{r}
+#types of dogs by breed
+outcomes %>% filter(year(datetime) > 2013 & year(datetime) < 2022 & animal.type == 'Dog' & outcome.type == 'Adoption') %>% group_by(breed) %>%
+  summarise(num_dogs = n()) %>% arrange(desc(num_dogs))
+
+
+
+#potentially going to try cleaning up the dog breed to connect with external data
+dog_subset = outcomes %>% filter(animal.type == 'Dog')
+
+
+dog_subset = dog_subset %>% mutate(clean_breed = gsub(' Mix','',breed))
+
+dog_subset = dog_subset %>%
+  mutate(clean_breed= str_sub(clean_breed,1,ifelse(str_detect(clean_breed,'/'),str_locate(clean_breed,'/')[,'start']-1,-1)))
+
+unique(dog_subset[,c('breed','clean_breed')])
+
+length(unique(dog_subset[,'breed']))
+length(unique(dog_subset[,'clean_breed']))
+
+
+#dog breeds from KIB data set
+kib = read.csv('dog_breed_test.csv')
+
+kib[kib$breed %in% unique(dog_subset[,'clean_breed']),]
+#substr(dog_subset[2,]$clean_breed,1,str_locate(clean_breed,'/')
+
+str_locate(dog_subset$clean_breed,'/')[1,'start']-1
+
+       
+substr(dog_subset[2,]$clean_breed,1,str_locate(dog_subset[2,]$clean_breed,'/')[1,1]-1)
+
+str_locate(dog_subset$breed,'/')
+```
 
 
 ## Including Plots
